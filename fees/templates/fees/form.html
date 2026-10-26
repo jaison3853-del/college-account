@@ -1,0 +1,1 @@
+{% extends 'fees/base.html' %}{% block content %}<h1>{{ title }}</h1><section class="panel" style="max-width:620px"><form method="post">{% csrf_token %}{{ form.as_p }}<button>Save student</button></form></section>{% endblock %}

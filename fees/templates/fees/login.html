@@ -1,0 +1,1 @@
+{% extends 'fees/base.html' %}{% block content %}<div style="max-width:430px;margin:70px auto"><div class="eyebrow">MCC Fees Management</div><h1>Welcome back.</h1><p class="muted">Sign in to access student fees and collections.</p><section class="panel"><form method="post">{% csrf_token %}{{ form.as_p }}<button>Sign in</button></form></section></div>{% endblock %}

@@ -1,0 +1,21 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+import {balance,csvCell,sourceMoney,toPaise,totals} from '../lib/money';
+import {commandSchema} from '../lib/schema';
+import {parseWorkbook} from '../lib/importer';
+import type {Fee} from '../lib/types';
+const fee:Fee={id:'f1',studentId:'s1',semester:1,amountPaise:9800000,concessionPaise:0,collegePaise:3000000,ourPaise:4000000};
+test('separate accounts combine only for student balance',()=>{assert.equal(balance(fee),2800000);assert.deepEqual(totals([fee]),{net:9800000,college:3000000,our:4000000,outstanding:2800000,credit:0});});
+test('credits do not cancel another student outstanding',()=>{const t=totals([fee,{...fee,id:'f2',collegePaise:7000000}]);assert.equal(t.outstanding,2800000);assert.equal(t.credit,1200000);});
+test('money uses exact integer paise',()=>{assert.equal(toPaise('0.29'),29);assert.equal(toPaise('98000.01'),9800001);assert.equal(sourceMoney('30000+35580'),6558000);assert.equal(sourceMoney('NILL'),0);assert.equal(sourceMoney(null),null);});
+test('reject formula injection, negative values, fractional paise and invalid additions',()=>{for(const s of ['=SUM(A1:A2)','-1','1.001','1+','1e5','Infinity'])assert.throws(()=>sourceMoney(s));});
+test('CSV neutralizes formula text and quotes delimiters',()=>{assert.equal(csvCell('=1+1'),'"\'=1+1"');assert.equal(csvCell('A,"B"'),'"A,""B"""');});
+test('payment schema rejects bad account, zero amount and impossible dates',()=>{const p={action:'payment',feeId:'f1',account:'our',amountPaise:100,date:'2026-01-17',method:'cash',token:'bfb6b6df-b646-430b-bcb0-272ad4c76723'};assert.equal(commandSchema.safeParse(p).success,true);for(const change of [{account:'personal'},{amountPaise:0},{date:'2026-02-30'},{amountPaise:1.2}])assert.equal(commandSchema.safeParse({...p,...change}).success,false);});
+test('concession cannot exceed assigned fees',()=>{assert.equal(commandSchema.safeParse({action:'fee',studentId:'s1',semester:1,amountPaise:100,concessionPaise:101}).success,false);});
+test('MCC import excludes pending tables and preserves account collections',async()=>{
+ const w=new ExcelJS.Workbook();for(const name of ['BCA','B.com','BBA','FASHION DESIGNING','BSW','MSW','MSC PSYCOLOGY','BSC PHYCOLOGY'])w.addWorksheet(name);
+ const s=w.getWorksheet('BCA')!;s.getCell('B4').value='Sample Student';s.getCell('C4').value=110000;s.getCell('D4').value='30000+30000';s.getCell('E4').value=40000;s.getCell('F4').value=9000;s.getCell('B72').value='Pending duplicate';s.getCell('C72').value=99999;
+ const rows=await parseWorkbook(Buffer.from(await w.xlsx.writeBuffer()));assert.equal(rows.length,1);assert.equal(rows[0].fees[0].collegePaise,6000000);assert.equal(rows[0].fees[0].ourPaise,4000000);assert.equal(rows[0].fees[0].balancePaise,1000000);assert.ok(rows[0].warnings.some(w=>w.includes('differs')));
+});
+test('import requires all eight expected sheets',async()=>{const w=new ExcelJS.Workbook();w.addWorksheet('Other');await assert.rejects(async()=>parseWorkbook(Buffer.from(await w.xlsx.writeBuffer())));});

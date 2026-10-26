@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // All application data goes through role-checked server APIs.
+    // The Admin SDK is authorized by IAM, never by browser rules.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
