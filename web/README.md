@@ -77,3 +77,9 @@ Accountants/admins can edit payments from Payment history. A correction reason i
 Admins can Delete student from the student ledger after confirmation. This archives the student and hides their fees/payments from active lists, exports and totals; underlying financial records and admission-number reservations remain intact. There is no permanent erase or restore UI. New payments and fee assignments reject archived students.
 
 The student register now shows an Add-on course column and filter based on existing specialization values, and includes that field in CSV export. Without add-on and unspecified records are separate filter choices.
+
+## Attendance
+
+Attendance is a separate section with academic year, course/add-on, class date, topic, duration (stored in whole minutes) and a present-only student checklist. Unselected students are not recorded as absent. Multiple classes can be recorded on one date, including classes with zero attendees. Saved classes show hours and total hours for the selected year/course/add-on. PDF downloads include class details and the present list, with automatic pagination. For characters unsupported by the downloadable PDF font, View → Print / Save PDF preserves browser-rendered Unicode text.
+
+Staff roles can save classes; viewers can view/download reports. Selected students are checked server-side against the active course/year/add-on roster. Each class has an idempotency key to prevent duplicate save retries. Attendance stores a name/admission snapshot so later student archival does not rewrite historical reports. Editing/deleting saved attendance sessions is not implemented.

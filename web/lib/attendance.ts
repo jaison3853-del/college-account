@@ -1,0 +1,3 @@
+import {z} from 'zod';
+export const attendanceSchema=z.object({id:z.uuid(),date:z.iso.date(),course:z.string().trim().min(1).max(100),addon:z.string().trim().max(140).default(''),topic:z.string().trim().max(200).default(''),year:z.string().regex(/^\d{4}-\d{2}$/),minutes:z.number().int().min(1).max(1440),presentIds:z.array(z.string().min(1).max(100)).max(1000)}).refine(v=>new Set(v.presentIds).size===v.presentIds.length,{message:'Duplicate students'});
+export type Attendance={id:string;date:string;course:string;addon:string;topic:string;year:string;minutes:number;present:{id:string;name:string;admissionNumber:string}[];createdAt:string;createdBy:string};
