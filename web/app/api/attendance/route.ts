@@ -13,7 +13,7 @@ export async function POST(req:NextRequest){try{
   if(old.exists){if(old.data()!.createdBy!==uid||old.data()!.fingerprint!==fingerprint)throw new HttpError(409,'This class was already saved with different details.');return;}
   const docs=presentIds.length?await tx.getAll(...presentIds.map(id=>db.collection('students').doc(id))):[];
   const present=docs.map(d=>{
-   const s=d.data();if(!s||s.deletedAt||s.status==='discontinued'||s.year!==input.year||s.course!==input.course||(input.addon&&(s.status==='no-addon'?'Without add-on':s.specialization?.trim()||'Not specified')!==input.addon))throw new HttpError(400,'Selected students must belong to the chosen active class. Refresh the student list.');
+   const s=d.data();if(!s||s.deletedAt||s.status==='discontinued'||s.year!==input.year||(input.course&&s.course!==input.course)||(input.addon&&(s.status==='no-addon'?'Without add-on':s.specialization?.trim()||'Not specified')!==input.addon))throw new HttpError(400,'Selected students must belong to the chosen active class. Refresh the student list.');
    return {id:d.id,name:s.name,admissionNumber:s.admissionNumber};
   });
   tx.create(ref,{...fields,present,createdBy:uid,createdAt:new Date().toISOString(),fingerprint});
