@@ -52,7 +52,7 @@ Do not put emulator variables in Vercel. No Firebase project, user role, Firesto
 
 ## Accounting and integrity
 
-Money is stored as integer paise. Each payment belongs to a single receiving account. Fee balances subtract both accounts after concession. Firestore transactions keep each account's fee total and the immutable payment record consistent under concurrency. Client-provided idempotency tokens prevent duplicate payment retries; changed payloads with a reused token are rejected. Imported rows, students, fees and historical payments are written atomically per student. Admission-number uniqueness is enforced transactionally. Direct browser Firestore access is denied; all API routes verify Firebase ID tokens, revocation and roles.
+Money is stored as integer paise. Each payment belongs to a single receiving account. Fee balances subtract both accounts after concession. Firestore transactions keep each account's fee total and the payment record consistent under concurrency. Client-provided idempotency tokens prevent duplicate payment retries; changed payloads with a reused token are rejected. Imported rows, students, fees and historical payments are written atomically per student. Admission-number uniqueness is enforced transactionally. Direct browser Firestore access is denied; all API routes verify Firebase ID tokens, revocation and roles.
 
 The app supports student/semester ledgers, account and date reports, pending filters, CSV exports, and browser Print / Save PDF. Fees must be assigned per student for exceptions. It does not implement refunds, payment reversals, automatic credit transfers, billing integrations, a complete financial audit workflow, backup automation or course-level bulk fee assignment. Plan database backups and retention before storing live financial data.
 
@@ -69,3 +69,11 @@ firebase emulators:exec --only auth,firestore --project demo-mcc-fees 'node scri
 ```
 
 The script uses only synthetic data in a demo emulator project, checks role access, concurrent payment retries, split totals, reviewed import and browser rules, and never connects to the live Firebase project.
+
+## Payment corrections, student removal and add-on courses
+
+Accountants/admins can edit payments from Payment history. A correction reason is required. The receiving-account totals are reversed and reapplied atomically, and a version check rejects stale edits. The paymentAudit collection keeps before/after records; the UI shows correction dates and reasons. Historical collection dates may remain unknown. Semester changes are not supported by this editor.
+
+Admins can Delete student from the student ledger after confirmation. This archives the student and hides their fees/payments from active lists, exports and totals; underlying financial records and admission-number reservations remain intact. There is no permanent erase or restore UI. New payments and fee assignments reject archived students.
+
+The student register now shows an Add-on course column and filter based on existing specialization values, and includes that field in CSV export. Without add-on and unspecified records are separate filter choices.
