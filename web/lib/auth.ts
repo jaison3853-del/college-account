@@ -1,5 +1,5 @@
 import type {NextRequest} from 'next/server';
-import {adminServices} from './firebase-admin';
+import {adminServices,FirebaseConfigurationError} from './firebase-admin';
 import type {Role} from './types';
 export class HttpError extends Error {constructor(public status:number,message:string){super(message);}}
 export async function authorized(req:NextRequest,write=false){
@@ -20,6 +20,12 @@ export async function authorized(req:NextRequest,write=false){
 export function apiError(error:unknown){
   if(error instanceof HttpError) return Response.json({error:error.message},{status:error.status});
   if(error instanceof Error&&error.name==='ZodError') return Response.json({error:'Check the required fields, dates and amounts.'},{status:400});
-  console.error('API operation failed:',error instanceof Error?error.name:'UnknownError');
+  if(error instanceof FirebaseConfigurationError)return Response.json({error:error.message},{status:503});
+  const code=error&&typeof error==='object'&&'code' in error?String(error.code):'unknown';
+  console.error('API operation failed:',error instanceof Error?error.name:'UnknownError','code:',code.replace(/[^a-zA-Z0-9_/-]/g,'').slice(0,80));
+  if(code==='5')return Response.json({error:'Firestore database was not found. Verify that this Firebase project has a database named (default).'}, {status:503});
+  if(code==='7')return Response.json({error:'Firestore denied server access. Check the service-account IAM permissions and that the Firestore API is enabled.'}, {status:503});
+  if(code==='16')return Response.json({error:'Firestore could not authenticate the server. Check the service-account credentials in Vercel.'}, {status:503});
+  if(code==='14'||code==='4')return Response.json({error:'Firestore is temporarily unreachable or the request timed out. Retry and check Vercel runtime logs.'}, {status:503});
   return Response.json({error:'The operation could not be completed. Check the server configuration and try again.'},{status:500});
 }
